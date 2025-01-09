@@ -1,6 +1,7 @@
 # Import required libraries
 import os
 import keras
+import requests
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -19,12 +20,32 @@ model_paths = {
     'VGG19': os.path.join(current_dir, 'models', 'vgg19_model.keras'),
     'ResNet50': os.path.join(current_dir, 'models', 'resnet50_model.keras'),
 }
+model_urls = {
+    'CNN': 'https://drive.google.com/file/d/1HKWSxMj7odYihQnO8gy_Do2VXc2uT1vn/view?usp=drive_link',
+    'VGG19': 'https://drive.google.com/file/d/1z20Z9ZLVg-693aIZaUd1XtXq32MzyOnV/view?usp=drive_link',
+    'ResNet50': 'https://drive.google.com/file/d/1LxY39-rb0UFeRp-NTAsN-vUeY9s_wqh9/view?usp=drive_link',
+}
 
 # Load models and handle potential exceptions
 models = {}
 for name, path in model_paths.items():
     try:
-        models[name] = load_model_safely(path)
+        if not os.path.exists(path):
+            url = model_urls[name]
+            path = model_paths[name]
+
+            response = requests.get(url)
+            
+            if response.status_code == 200:
+                with open(path, 'wb') as file:
+                    file.write(response.content)
+                print(f'> {name} model downloaded successfully.')
+            else:
+                models[name] = None
+                print(f'> Failed to download {name}model ...!')
+
+        models[name] = load_model_safely(path)   
+        
     except Exception as e:
         st.error(f"Error loading model {name} from {path}: {str(e)}")
 
